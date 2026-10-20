@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { RippleGame } from '../src/game.ts';
 import { computeHoopCountdown, computeHoopRadius } from '../src/hoops.ts';
 import { DEFAULT_CONFIG } from '../src/config.ts';
+import { buildShareMessage, buildShareSnapshot, SHARE_GAME_URL } from '../src/share.ts';
 
 test('1. You never touch the puck itself — direct taps on the puck are rejected', () => {
   const game = new RippleGame(101);
@@ -53,8 +54,8 @@ test('3. Directional wave-push physics: tap left -> moves right, tap behind -> a
   const game = new RippleGame(103);
   game.startRun(103);
 
-  // Place puck at center at rest
-  game.state.puck.x = 0;
+  // Place puck on the left side at rest so two strong pushes have plenty of pool runway
+  game.state.puck.x = -140;
   game.state.puck.y = 0;
   game.state.puck.vx = 0;
   game.state.puck.vy = 0;
@@ -62,8 +63,8 @@ test('3. Directional wave-push physics: tap left -> moves right, tap behind -> a
   game.state.currentHoop.x = 0;
   game.state.currentHoop.y = -220;
 
-  // A) Tap to its left (-65, 0) -> wave travels to puck and pushes it right (+x)
-  const tapLeft = game.handlePoolTap({ x: -65, y: 0 });
+  // A) Tap to its left (-205, 0) -> wave travels to puck and pushes it right (+x)
+  const tapLeft = game.handlePoolTap({ x: -205, y: 0 });
   assert.equal(tapLeft.tapAccepted, true);
 
   // Immediately after tap (before wave arrives), puck is still at rest
@@ -229,4 +230,66 @@ test('7. Edge Recovery: a counter-ripple near the pool rim saves a fast-approach
   assert.ok(game.state.puck.vx < 0, 'Puck should now be moving safely away from the right edge');
   assert.equal(game.state.telemetry.recoveries, 1);
 });
+
+test('8. Close-range power boost: tapping close to the puck hits it harder than a mid-range tap', () => {
+  const closeGame = new RippleGame(108);
+  closeGame.startRun(108);
+  closeGame.state.puck.x = 0;
+  closeGame.state.puck.y = 0;
+  closeGame.state.currentHoop.y = -240;
+
+  // Tap 30px to the left of the puck (just outside the 24px exclusion radius)
+  const tapClose = closeGame.handlePoolTap({ x: -30, y: 0 });
+  assert.equal(tapClose.tapAccepted, true);
+  assert.equal(closeGame.state.activeRipple?.isCloseHardHit, true);
+
+  for (let i = 0; i < 20; i++) {
+    const ev = closeGame.step(0.01);
+    if (ev.waveImpactedPuck) break;
+  }
+  const closeImpactDelta = closeGame.state.telemetry.lastImpactSpeedDelta;
+
+  // Compare against a mid-range tap at 120px from the puck
+  const midGame = new RippleGame(108);
+  midGame.startRun(108);
+  midGame.state.puck.x = 0;
+  midGame.state.puck.y = 0;
+  midGame.state.currentHoop.y = -240;
+
+  const tapMid = midGame.handlePoolTap({ x: -120, y: 0 });
+  assert.equal(tapMid.tapAccepted, true);
+  for (let i = 0; i < 40; i++) {
+    const ev = midGame.step(0.01);
+    if (ev.waveImpactedPuck) break;
+  }
+  const midImpactDelta = midGame.state.telemetry.lastImpactSpeedDelta;
+
+  assert.ok(
+    closeImpactDelta > midImpactDelta * 1.45,
+    `Expected close tap impact (${closeImpactDelta}) to hit much harder than mid tap (${midImpactDelta})`
+  );
+  assert.ok(closeImpactDelta >= 350, `Expected close tap delta >= 350 px/s, got ${closeImpactDelta}`);
+});
+
+test('9. Share score message includes score achieved, hoops, and shareable game link', () => {
+  const game = new RippleGame(109);
+  game.startRun(109);
+  game.state.score = 1250;
+  game.state.bestScore = 1250;
+  game.state.hoopsCleared = 6;
+  game.state.telemetry.cleanShots = 4;
+  game.state.telemetry.maxMultiplier = 4;
+
+  const snap = buildShareSnapshot(game.state);
+  assert.equal(snap.score, 1250);
+  assert.equal(snap.hoops, 6);
+  assert.equal(snap.cleanShots, 4);
+  assert.equal(snap.isPersonalBest, true);
+
+  const msg = buildShareMessage(snap);
+  assert.ok(msg.includes('1,250'), 'Share message must display formatted score');
+  assert.ok(msg.includes('6 Hoops'), 'Share message must include hoops count');
+  assert.ok(msg.includes(SHARE_GAME_URL), 'Share message must include the playable game URL');
+});
+
 

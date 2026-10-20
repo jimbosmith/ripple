@@ -1,6 +1,6 @@
                                                                               
-import { cloneConfig, DEFAULT_CONFIG } from './config.js?v=1';
-import { createHoopTarget, pickNextHoopPosition } from './hoops.js?v=1';
+import { cloneConfig, DEFAULT_CONFIG } from './config.js?v=2';
+import { createHoopTarget, pickNextHoopPosition } from './hoops.js?v=2';
 import {
   allocId,
   createEmptyEvents,
@@ -8,11 +8,13 @@ import {
   stepPhysics,
   trySpawnRipple,
                  
-} from './physics.js?v=1';
-import { SeededRNG } from './rng.js?v=1';
+} from './physics.js?v=2';
+import { SeededRNG } from './rng.js?v=2';
 
 const STORAGE_KEY_BEST_SCORE = 'ripple_best_score_v1';
 const STORAGE_KEY_BEST_HOOPS = 'ripple_best_hoops_v1';
+const STORAGE_KEY_BEST_CLEAN = 'ripple_best_clean_v1';
+const STORAGE_KEY_BEST_MULT = 'ripple_best_mult_v1';
 
 export function createInitialTelemetry()               {
   return {
@@ -42,18 +44,27 @@ export class RippleGame {
     this.state = this.buildFreshState('title', this.baseSeed);
   }
 
-          loadPersistedBest()                                           {
+          loadPersistedBest()   
+                      
+                      
+                           
+                           
+    {
     let bestScore = 0;
     let bestHoops = 0;
+    let bestCleanShots = 0;
+    let bestMultiplier = 1;
     try {
       if (typeof localStorage !== 'undefined') {
         bestScore = parseInt(localStorage.getItem(STORAGE_KEY_BEST_SCORE) || '0', 10) || 0;
         bestHoops = parseInt(localStorage.getItem(STORAGE_KEY_BEST_HOOPS) || '0', 10) || 0;
+        bestCleanShots = parseInt(localStorage.getItem(STORAGE_KEY_BEST_CLEAN) || '0', 10) || 0;
+        bestMultiplier = parseInt(localStorage.getItem(STORAGE_KEY_BEST_MULT) || '1', 10) || 1;
       }
     } catch {
-      // Ignore storage errors in headless/private environments
+      // Ignore storage errors
     }
-    return { bestScore, bestHoops };
+    return { bestScore, bestHoops, bestCleanShots, bestMultiplier };
   }
 
          savePersistedBest()       {
@@ -61,6 +72,8 @@ export class RippleGame {
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem(STORAGE_KEY_BEST_SCORE, String(this.state.bestScore));
         localStorage.setItem(STORAGE_KEY_BEST_HOOPS, String(this.state.bestHoops));
+        localStorage.setItem(STORAGE_KEY_BEST_CLEAN, String(this.state.bestCleanShots));
+        localStorage.setItem(STORAGE_KEY_BEST_MULT, String(this.state.bestMultiplier));
       }
     } catch {
       // Ignore storage errors
@@ -69,9 +82,19 @@ export class RippleGame {
 
           buildFreshState(phase                    , seed        )            {
     this.rng = new SeededRNG(seed);
-    const { bestScore, bestHoops } = this.loadPersistedBest();
-    const prevBestScore = this.state ? Math.max(bestScore, this.state.bestScore) : bestScore;
-    const prevBestHoops = this.state ? Math.max(bestHoops, this.state.bestHoops) : bestHoops;
+    const persisted = this.loadPersistedBest();
+    const prevBestScore = this.state
+      ? Math.max(persisted.bestScore, this.state.bestScore)
+      : persisted.bestScore;
+    const prevBestHoops = this.state
+      ? Math.max(persisted.bestHoops, this.state.bestHoops)
+      : persisted.bestHoops;
+    const prevBestClean = this.state
+      ? Math.max(persisted.bestCleanShots, this.state.bestCleanShots)
+      : persisted.bestCleanShots;
+    const prevBestMult = this.state
+      ? Math.max(persisted.bestMultiplier, this.state.bestMultiplier)
+      : persisted.bestMultiplier;
 
     const puck = createInitialPuck(this.config);
     const firstHoopPos = pickNextHoopPosition(
@@ -101,6 +124,8 @@ export class RippleGame {
       score: 0,
       bestScore: prevBestScore,
       bestHoops: prevBestHoops,
+      bestCleanShots: prevBestClean,
+      bestMultiplier: prevBestMult,
       multiplier: 1,
       cleanStreak: 0,
       hoopsCleared: 0,
@@ -121,9 +146,6 @@ export class RippleGame {
     };
   }
 
-  /**
-   * Starts or restarts a run immediately.
-   */
          startRun(customSeed         )       {
     const nextSeed =
       customSeed !== undefined
@@ -140,12 +162,6 @@ export class RippleGame {
     }
   }
 
-  /**
-   * Handles a tap/click in pool coordinates (x, y).
-   * - If in 'title': starts the run and, if the tap is a valid water tap, immediately spawns the opening ripple.
-   * - If in 'gameover' (after the brief 180ms death-frame lock): one tap immediately starts a new run!
-   * - If in 'playing': attempts to spawn the single active ripple.
-   */
          handlePoolTap(poolPos      )             {
     if (this.state.phase === 'title') {
       this.state.phase = 'playing';

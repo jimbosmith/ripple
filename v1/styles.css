@@ -1,0 +1,533 @@
+:root {
+  --bg-deep: #04070b;
+  --glass-bg: rgba(9, 19, 28, 0.78);
+  --glass-border: rgba(120, 220, 255, 0.18);
+  --aqua-primary: #48f5d6;
+  --cyan-bright: #7ce8ff;
+  --gold-clean: #ffe680;
+  --coral-danger: #ff5e6c;
+  --text-main: #edf8ff;
+  --text-muted: #8ab0c4;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-deep);
+  color: var(--text-main);
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  touch-action: none;
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+}
+
+/* Top Floating Glass HUD */
+.hud-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 18px;
+  background: rgba(6, 13, 20, 0.82);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--glass-border);
+  z-index: 20;
+  flex-wrap: wrap;
+}
+
+.brand-cluster {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-emblem {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, #0e2c40 0%, #05111a 100%);
+  border: 1.5px solid rgba(110, 235, 255, 0.45);
+  box-shadow: 0 0 14px rgba(72, 245, 214, 0.25);
+}
+
+.emblem-wave {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--aqua-primary);
+  opacity: 0.75;
+}
+
+.emblem-puck {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 8px #7ce8ff;
+}
+
+.brand-titles {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-name {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #ffffff;
+  line-height: 1.1;
+}
+
+.brand-tag {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--cyan-bright);
+  opacity: 0.8;
+}
+
+.telemetry-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stat-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 74px;
+  padding: 4px 12px;
+  border-radius: 10px;
+  background: rgba(14, 29, 42, 0.68);
+  border: 1px solid rgba(120, 220, 255, 0.14);
+}
+
+.stat-pill-subtle {
+  opacity: 0.85;
+}
+
+.stat-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+.stat-value {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.multiplier-badge {
+  color: var(--aqua-primary);
+  transition: transform 0.18s ease, color 0.18s ease;
+}
+
+.multiplier-badge.multiplier-active {
+  color: var(--gold-clean);
+  text-shadow: 0 0 12px rgba(255, 230, 128, 0.65);
+  transform: scale(1.08);
+}
+
+.hud-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.icon-btn {
+  background: rgba(16, 32, 46, 0.75);
+  color: var(--text-main);
+  border: 1px solid rgba(120, 220, 255, 0.2);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.icon-btn:hover {
+  background: rgba(28, 54, 76, 0.9);
+  border-color: rgba(120, 235, 255, 0.45);
+}
+
+.icon-btn-dev {
+  border-color: rgba(255, 215, 110, 0.3);
+  color: #ffe299;
+}
+
+/* Main Play Stage */
+.play-stage {
+  flex: 1;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+#game-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+}
+
+/* Bottom Single-Ripple Commitment Pill */
+.bottom-dock {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 12;
+}
+
+.ripple-commitment-pill {
+  min-width: 245px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(7, 16, 25, 0.82);
+  border: 1px solid rgba(110, 230, 255, 0.25);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ripple-commitment-pill.is-committed {
+  border-color: rgba(255, 205, 110, 0.55);
+}
+
+.commitment-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  color: #c8f4ff;
+}
+
+.commitment-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--aqua-primary);
+  box-shadow: 0 0 8px var(--aqua-primary);
+}
+
+.ripple-commitment-pill.is-committed .commitment-dot {
+  background: #ffcf5c;
+  box-shadow: 0 0 8px #ffcf5c;
+}
+
+.commitment-bar-track {
+  width: 100%;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.commitment-bar-fill {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--aqua-primary), var(--cyan-bright));
+  transition: width 0.04s linear;
+}
+
+.ripple-commitment-pill.is-committed .commitment-bar-fill {
+  background: linear-gradient(90deg, #ff9d5c, #ffe07d);
+}
+
+/* Overlay Cards */
+.overlay-card {
+  position: absolute;
+  max-width: 450px;
+  width: calc(100% - 32px);
+  padding: 24px 26px;
+  border-radius: 20px;
+  background: rgba(7, 16, 24, 0.86);
+  border: 1px solid rgba(130, 230, 255, 0.26);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75);
+  text-align: center;
+  z-index: 25;
+}
+
+.gameover-card {
+  cursor: pointer;
+}
+
+.overlay-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  background: rgba(72, 245, 214, 0.14);
+  color: var(--aqua-primary);
+  border: 1px solid rgba(72, 245, 214, 0.35);
+  margin-bottom: 8px;
+}
+
+.badge-danger {
+  background: rgba(255, 94, 108, 0.15);
+  color: #ff808b;
+  border-color: rgba(255, 94, 108, 0.4);
+}
+
+.overlay-card h2 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 6px;
+}
+
+.overlay-subtitle {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin-bottom: 16px;
+}
+
+.overlay-reason {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #ffe299;
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+.rules-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  margin-bottom: 18px;
+}
+
+.rule-item {
+  padding: 9px 12px;
+  border-radius: 11px;
+  background: rgba(15, 31, 45, 0.65);
+  border: 1px solid rgba(120, 220, 255, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rule-item strong {
+  font-size: 0.78rem;
+  color: var(--aqua-primary);
+}
+
+.rule-item span {
+  font-size: 0.75rem;
+  color: #c2dce9;
+  line-height: 1.35;
+}
+
+.score-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 18px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(14, 28, 40, 0.72);
+  border: 1px solid rgba(120, 220, 255, 0.14);
+}
+
+.summary-label {
+  display: block;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 3px;
+}
+
+.summary-val {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.accent-gold {
+  color: var(--gold-clean);
+}
+
+.primary-btn {
+  width: 100%;
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #48f5d6 0%, #2cb8ff 100%);
+  color: #03131d;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(44, 184, 255, 0.35);
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+}
+
+.primary-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(72, 245, 214, 0.48);
+}
+
+.secondary-btn {
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(120, 220, 255, 0.3);
+  background: rgba(16, 34, 49, 0.8);
+  color: var(--text-main);
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.overlay-btn-group {
+  display: flex;
+  gap: 10px;
+}
+
+/* Developer Telemetry Panel */
+.dev-panel {
+  position: absolute;
+  top: 66px;
+  right: 16px;
+  width: 300px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(6, 14, 22, 0.92);
+  border: 1px solid rgba(255, 215, 110, 0.35);
+  backdrop-filter: blur(14px);
+  z-index: 30;
+  font-size: 0.76rem;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+}
+
+.dev-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  color: #ffe299;
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+}
+
+.dev-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.dev-section {
+  margin-bottom: 10px;
+}
+
+.dev-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  background: rgba(14, 28, 40, 0.65);
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.dev-grid div {
+  display: flex;
+  flex-direction: column;
+}
+
+.dev-grid span {
+  font-size: 0.64rem;
+  color: var(--text-muted);
+}
+
+.dev-grid strong {
+  color: #ffffff;
+  font-size: 0.78rem;
+}
+
+.dev-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  color: #ccebf8;
+}
+
+.slider-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 7px;
+}
+
+.slider-row input[type='range'] {
+  width: 100%;
+  accent-color: var(--aqua-primary);
+}
+
+.dev-btn-sm {
+  width: 100%;
+  padding: 6px 10px;
+  font-size: 0.74rem;
+}
+
+@media (max-width: 720px) {
+  .hud-top {
+    padding: 8px 10px;
+  }
+  .brand-tag,
+  .stat-pill-subtle {
+    display: none;
+  }
+  .stat-pill {
+    min-width: 58px;
+    padding: 3px 8px;
+  }
+}

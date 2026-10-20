@@ -9,14 +9,15 @@
        
                
                     
-import { createHoopTarget, pickNextHoopPosition } from './hoops.js?v=1';
-import { SeededRNG } from './rng.js?v=1';
+import { createHoopTarget, pickNextHoopPosition } from './hoops.js?v=2';
+import { SeededRNG } from './rng.js?v=2';
 
                              
                        
                                                                          
                             
                              
+                          
                        
                      
                           
@@ -32,6 +33,7 @@ export function createEmptyEvents()             {
     tapRejectedReason: null,
     waveImpactedPuck: false,
     waveImpactStrength: 0,
+    isCloseHardHit: false,
     hoopCleared: false,
     cleanShot: false,
     cleanMultiplier: 1,
@@ -63,7 +65,8 @@ export function createInitialPuck(config              )            {
     wake: [],
     minRimDistDuringApproach: config.poolRadius,
     inEdgeDanger: false,
-    timeSinceHit: 99
+    timeSinceHit: 99,
+    lastHitIntensity: 0
   };
 }
 
@@ -167,6 +170,8 @@ export function trySpawnRipple(
     return events;
   }
 
+  const isCloseTap = distToPuck <= config.closeTapRadius;
+
   // Spawn the single active ripple
   const maxRadius = config.rippleInitialRadius + config.waveSpeed * config.rippleDurationSec;
   const ripple             = {
@@ -181,6 +186,7 @@ export function trySpawnRipple(
     waveSpeed: config.waveSpeed,
     hasImpactedPuck: false,
     impactStrength: 0,
+    isCloseHardHit: isCloseTap,
     impactPoint: null
   };
 
@@ -193,19 +199,20 @@ export function trySpawnRipple(
   }
 
   // Spawn subtle water droplet particles at the tap origin
-  for (let i = 0; i < 6; i++) {
-    const ang = (Math.PI * 2 * i) / 6 + (i % 2) * 0.2;
-    const spd = 24 + (i % 3) * 14;
+  const dropletCount = isCloseTap ? 9 : 6;
+  for (let i = 0; i < dropletCount; i++) {
+    const ang = (Math.PI * 2 * i) / dropletCount + (i % 2) * 0.2;
+    const spd = (isCloseTap ? 34 : 24) + (i % 3) * 14;
     state.particles.push({
       x: clampedX,
       y: clampedY,
       vx: Math.cos(ang) * spd,
       vy: Math.sin(ang) * spd,
-      radius: 1.6,
+      radius: isCloseTap ? 2.0 : 1.6,
       age: 0,
-      maxAge: 0.34,
-      color: '#7ce8ff',
-      alpha: 0.75
+      maxAge: 0.36,
+      color: isCloseTap ? '#ffe694' : '#7ce8ff',
+      alpha: 0.85
     });
   }
 
@@ -239,14 +246,12 @@ function checkHoopPassage(
   const speed = Math.hypot(puck.vx, puck.vy);
   const dx = puck.x - hoop.x;
   const dy = puck.y - hoop.y;
-  // Dot product of (puck - hoop) and velocity: >= 0 means puck has reached or passed the closest approach point
   const movingAwayOrPastApex = dx * puck.vx + dy * puck.vy >= -2.0;
   const deepInBullseye = seg.dist <= hoop.cleanRadius * 0.55;
   const nearlyStoppedInside = speed < 22 && curDist <= hoop.radius * 0.92;
   const timerAboutToExpireInside = hoop.timer <= 0.05 && curDist <= hoop.radius;
 
   if (!deepInBullseye && !movingAwayOrPastApex && !nearlyStoppedInside && !timerAboutToExpireInside) {
-    // Still approaching the center of the hoop — let it reach its closest approach on the next substep
     return;
   }
 
@@ -264,9 +269,14 @@ function checkHoopPassage(
     state.multiplier = Math.min(8, state.multiplier + 1);
     state.telemetry.cleanShots += 1;
     state.telemetry.maxMultiplier = Math.max(state.telemetry.maxMultiplier, state.multiplier);
+    if (state.telemetry.cleanShots > state.bestCleanShots) {
+      state.bestCleanShots = state.telemetry.cleanShots;
+    }
+    if (state.multiplier > state.bestMultiplier) {
+      state.bestMultiplier = state.multiplier;
+    }
   } else {
     state.cleanStreak = 0;
-    // Non-clean pass keeps multiplier at 1 (or steps down gently if high)
     state.multiplier = Math.max(1, state.multiplier - 1);
   }
 
@@ -292,18 +302,16 @@ function checkHoopPassage(
     multiplier: state.multiplier,
     pointsAwarded,
     age: 0,
-    duration: isClean ? 0.85 : 0.55
+    duration: isClean ? 0.95 : 0.6
   };
   state.clearedEffects.push(effect);
 
-  // Boost wake glow on clean shots
   for (const w of puck.wake) {
     if (isClean) {
       w.cleanGlow = Math.max(w.cleanGlow, 1.0);
     }
   }
 
-  // Floating callout
   if (isClean) {
     state.callouts.push({
       id: allocId(),
@@ -312,7 +320,7 @@ function checkHoopPassage(
       x: hoop.x,
       y: hoop.y - hoop.radius - 14,
       age: 0,
-      duration: 1.05,
+      duration: 1.1,
       kind: 'clean'
     });
   } else {
@@ -322,30 +330,29 @@ function checkHoopPassage(
       x: hoop.x,
       y: hoop.y - hoop.radius - 10,
       age: 0,
-      duration: 0.75,
+      duration: 0.78,
       kind: 'normal'
     });
   }
 
-  // Spawn celebration particles
-  const particleCount = isClean ? 18 : 8;
+  const particleCount = isClean ? 22 : 10;
   for (let i = 0; i < particleCount; i++) {
     const ang = (Math.PI * 2 * i) / particleCount;
-    const spd = isClean ? 65 + (i % 3) * 35 : 35 + (i % 2) * 20;
+    const spd = isClean ? 72 + (i % 3) * 38 : 38 + (i % 2) * 22;
     state.particles.push({
       x: hoop.x + Math.cos(ang) * (isClean ? hoop.cleanRadius : hoop.radius * 0.7),
       y: hoop.y + Math.sin(ang) * (isClean ? hoop.cleanRadius : hoop.radius * 0.7),
       vx: Math.cos(ang) * spd,
       vy: Math.sin(ang) * spd,
-      radius: isClean ? 2.4 : 1.7,
+      radius: isClean ? 2.6 : 1.8,
       age: 0,
-      maxAge: isClean ? 0.65 : 0.42,
-      color: isClean ? '#ffe680' : '#64e8ff',
-      alpha: 0.95
+      maxAge: isClean ? 0.72 : 0.45,
+      color: isClean ? (i % 2 === 0 ? '#ffe885' : '#64ffea') : '#7ce8ff',
+      alpha: 0.96
     });
   }
 
-  // Advance to the next hoop using the previewed position, then generate a new preview
+  // Advance to the next hoop
   const nextIndex = hoop.index + 1;
   const nextPos       = { x: state.nextHoopPreview.x, y: state.nextHoopPreview.y };
   state.currentHoop = createHoopTarget(
@@ -364,10 +371,6 @@ function checkHoopPassage(
   );
 }
 
-/**
- * Builds a helpful, specific diagnostic message when a run ends so failure produces
- * an immediate "I tapped too late" insight before the next one-tap attempt.
- */
 function buildFailureDiagnostic(
   state           ,
   reason                                 ,
@@ -397,7 +400,7 @@ function buildFailureDiagnostic(
   if (distToHoopEdge < 55) {
     return `Countdown expired just ${distToHoopEdge}px shy of the hoop.`;
   }
-  return 'Hoop countdown expired — tap behind a moving puck to accelerate.';
+  return 'Hoop countdown expired — tap close behind the puck for a stronger push.';
 }
 
 /**
@@ -411,7 +414,6 @@ export function stepPhysics(
 )             {
   const events = createEmptyEvents();
 
-  // Always update visual particles/callouts even during gameover freeze
   const clampedDt = Math.min(5.0, Math.max(0, dt));
   updateVisualEffects(state, clampedDt);
 
@@ -424,7 +426,6 @@ export function stepPhysics(
 
   state.runTimeSec += clampedDt;
 
-  // Substep for accurate wave-puck intersection and swept hoop detection
   const maxSubStep = 1 / 240;
   const steps = Math.max(1, Math.ceil(clampedDt / maxSubStep));
   const subDt = clampedDt / steps;
@@ -453,7 +454,6 @@ export function stepPhysics(
         const dy = puck.y - ripple.y;
         const dist = Math.hypot(dx, dy);
 
-        // Wave crest reaches the puck's hull
         const contactDist = Math.max(config.rippleInitialRadius, dist - puck.radius * 0.35);
         if (ripple.currentRadius >= contactDist && dist <= ripple.maxRadius + puck.radius * 0.65) {
           const ux = dist > 1e-5 ? dx / dist : 1;
@@ -462,14 +462,22 @@ export function stepPhysics(
           const minDist = config.puckTapExclusionRadius;
           const maxReach = ripple.maxRadius + puck.radius;
           const normDist = Math.max(0, Math.min(1, (dist - minDist) / Math.max(1, maxReach - minDist)));
-          const strength =
+          const baseAttenuation =
             1 - (1 - config.minDistanceImpulseRatio) * Math.pow(normDist, 1.08);
 
-          const basePush = config.baseWaveImpulse * strength;
+          // Close-range power surge: tapping close to the puck hits it harder!
+          const closeZoneSpan = Math.max(1, config.closeTapRadius - minDist);
+          const closeProximity = Math.max(0, Math.min(1, 1 - (dist - minDist) / closeZoneSpan));
+          const closeSurgeMultiplier =
+            1 + config.closeTapBoostRatio * Math.pow(closeProximity, 1.35);
+
+          const effectiveStrength = baseAttenuation * closeSurgeMultiplier;
+          const basePush = config.baseWaveImpulse * effectiveStrength;
 
           // If puck is moving toward the ripple origin (v · u < 0), absorb opposing velocity for crisp braking
           const radialVel = puck.vx * ux + puck.vy * uy;
-          const brakeBoost = radialVel < 0 ? -radialVel * config.headOnBrakingFactor * strength : 0;
+          const brakeBoost =
+            radialVel < 0 ? -radialVel * config.headOnBrakingFactor * effectiveStrength : 0;
 
           const totalDeltaV = basePush + brakeBoost;
           puck.vx += ux * totalDeltaV;
@@ -483,43 +491,48 @@ export function stepPhysics(
             puck.vy *= scale;
           }
 
+          const isHardCloseHit = closeProximity > 0.25;
+          ripple.isCloseHardHit = isHardCloseHit;
+
           // Impart 2.5D wave rock & buoyancy bob
-          puck.tiltVx += ux * 15 * strength;
-          puck.tiltVy += uy * 15 * strength;
-          puck.bobVz += 8.5 * strength;
+          puck.tiltVx += ux * 16.5 * effectiveStrength;
+          puck.tiltVy += uy * 16.5 * effectiveStrength;
+          puck.bobVz += 9.5 * effectiveStrength;
           puck.timeSinceHit = 0;
+          puck.lastHitIntensity = Math.min(1.4, effectiveStrength);
 
           ripple.hasImpactedPuck = true;
-          ripple.impactStrength = strength;
+          ripple.impactStrength = effectiveStrength;
           ripple.impactPoint = { x: puck.x, y: puck.y };
 
           state.telemetry.lastWaveTravelMs = Math.round(ripple.age * 1000);
           state.telemetry.lastImpactSpeedDelta = Math.round(totalDeltaV);
 
           events.waveImpactedPuck = true;
-          events.waveImpactStrength = Math.max(events.waveImpactStrength, strength);
+          events.waveImpactStrength = Math.max(events.waveImpactStrength, effectiveStrength);
+          events.isCloseHardHit = isHardCloseHit;
 
-          // Spawn spray droplets on the pushed side of the puck
-          for (let i = 0; i < 9; i++) {
-            const spread = ((i - 4) / 4) * 0.85;
+          // Spawn spray droplets on the pushed side of the puck (extra rich on close power hits)
+          const sprayCount = isHardCloseHit ? 14 : 9;
+          for (let i = 0; i < sprayCount; i++) {
+            const spread = ((i - (sprayCount - 1) * 0.5) / (sprayCount * 0.5)) * 0.92;
             const ang = Math.atan2(uy, ux) + spread;
-            const spd = (55 + (i % 3) * 28) * strength;
+            const spd = (62 + (i % 3) * 32) * effectiveStrength;
             state.particles.push({
-              x: puck.x - ux * puck.radius * 0.6,
-              y: puck.y - uy * puck.radius * 0.6,
+              x: puck.x - ux * puck.radius * 0.65,
+              y: puck.y - uy * puck.radius * 0.65,
               vx: Math.cos(ang) * spd + puck.vx * 0.25,
               vy: Math.sin(ang) * spd + puck.vy * 0.25,
-              radius: 1.9,
+              radius: isHardCloseHit ? 2.3 : 1.9,
               age: 0,
-              maxAge: 0.45,
-              color: '#9bf0ff',
-              alpha: 0.85
+              maxAge: isHardCloseHit ? 0.54 : 0.45,
+              color: isHardCloseHit && i % 2 === 0 ? '#ffe688' : '#9bf0ff',
+              alpha: 0.9
             });
           }
         }
       }
 
-      // Expire the ripple once its commitment duration (~0.50s) completes
       if (ripple.age >= ripple.duration) {
         state.activeRipple = null;
       }
@@ -544,8 +557,8 @@ export function stepPhysics(
     const tiltDamp = 9.5;
     puck.tiltVx += (-tiltSpring * puck.tiltX - tiltDamp * puck.tiltVx) * subDt;
     puck.tiltVy += (-tiltSpring * puck.tiltY - tiltDamp * puck.tiltVy) * subDt;
-    puck.tiltX = Math.max(-1.2, Math.min(1.2, puck.tiltX + puck.tiltVx * subDt));
-    puck.tiltY = Math.max(-1.2, Math.min(1.2, puck.tiltY + puck.tiltVy * subDt));
+    puck.tiltX = Math.max(-1.25, Math.min(1.25, puck.tiltX + puck.tiltVx * subDt));
+    puck.tiltY = Math.max(-1.25, Math.min(1.25, puck.tiltY + puck.tiltVy * subDt));
 
     puck.bobVz += (-68 * puck.bobZ - 8.2 * puck.bobVz) * subDt;
     puck.bobZ = Math.max(-1.0, Math.min(1.0, puck.bobZ + puck.bobVz * subDt));
@@ -562,7 +575,6 @@ export function stepPhysics(
     }
 
     if (puck.inEdgeDanger && rimClearance > 0) {
-      // Saved if a recent counter-ripple deflected outward velocity inward/safe and puck is retreating from rim
       if (puck.timeSinceHit < 0.35 && outwardVel < -8 && rimClearance > puck.minRimDistDuringApproach + 3) {
         puck.inEdgeDanger = false;
         puck.minRimDistDuringApproach = config.poolRadius;
@@ -589,12 +601,11 @@ export function stepPhysics(
       }
     }
 
-    // 5. Check Hoop Passage (before failure check so a frame that enters the hoop wins)
+    // 5. Check Hoop Passage
     checkHoopPassage(state, prevX, prevY, config, rng, events);
 
-    // 6. Check Pool Edge Contact (touch the pool's edge and your run ends)
+    // 6. Check Pool Edge Contact
     if (rimClearance <= 0) {
-      // Clamp puck flush against the inner pool edge for the freeze-frame
       if (radialDist > 1e-5) {
         const maxR = config.poolRadius - puck.radius;
         puck.x = (puck.x / radialDist) * maxR;
@@ -629,7 +640,6 @@ export function stepPhysics(
     }
   }
 
-  // Urgent countdown tick event when crossing whole half-seconds under 2.0s
   const newHoopSecFloor = Math.ceil(state.currentHoop.timer);
   if (
     state.phase === 'playing' &&
@@ -647,18 +657,21 @@ function updateVisualEffects(state           , dt        )       {
   const puck = state.puck;
   const speed = Math.hypot(puck.vx, puck.vy);
 
-  // Sample wake ribbon points behind moving puck
-  if (state.phase === 'playing' && speed > 10) {
+  if (puck.lastHitIntensity > 0) {
+    puck.lastHitIntensity = Math.max(0, puck.lastHitIntensity - dt * 2.8);
+  }
+
+  if (state.phase === 'playing' && speed > 8) {
     const lastWake = puck.wake[puck.wake.length - 1];
     const distFromLast = lastWake ? Math.hypot(puck.x - lastWake.x, puck.y - lastWake.y) : 999;
-    if (distFromLast >= 4.5) {
+    if (distFromLast >= 4.0) {
       puck.wake.push({
         x: puck.x,
         y: puck.y,
         age: 0,
-        maxAge: 0.75,
+        maxAge: 0.85,
         speed,
-        cleanGlow: state.multiplier > 1 ? Math.min(1, (state.multiplier - 1) * 0.25) : 0
+        cleanGlow: state.multiplier > 1 ? Math.min(1, (state.multiplier - 1) * 0.28) : 0
       });
     }
   }

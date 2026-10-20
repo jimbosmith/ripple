@@ -38,6 +38,8 @@ export interface PuckState {
   inEdgeDanger: boolean;
   /** Time since last wave impact (seconds) */
   timeSinceHit: number;
+  /** Intensity of the last wave hit for rim glow feedback [0..1.5] */
+  lastHitIntensity: number;
 }
 
 export interface RippleWave {
@@ -52,6 +54,7 @@ export interface RippleWave {
   waveSpeed: number;
   hasImpactedPuck: boolean;
   impactStrength: number;
+  isCloseHardHit: boolean;
   impactPoint: Vec2 | null;
 }
 
@@ -130,8 +133,12 @@ export interface RippleConfig {
   rippleInitialRadius: number;
   /** Expansion speed of the circular ripple wavefront (pool units / sec) */
   waveSpeed: number;
-  /** Base outward impulse velocity imparted to the puck at close range (pool units / sec) */
+  /** Base outward impulse velocity imparted to the puck (pool units / sec) */
   baseWaveImpulse: number;
+  /** Extra impulse multiplier when tapping close to the puck (within closeTapRadius) */
+  closeTapBoostRatio: number;
+  /** Distance threshold from puck center within which the close-tap power boost applies */
+  closeTapRadius: number;
   /** Minimum fraction of baseWaveImpulse at the outer edge of the ripple's reach */
   minDistanceImpulseRatio: number;
   /** Extra opposing-velocity absorption when a wave hits the puck head-on (braking assist) */
@@ -178,6 +185,8 @@ export interface GameState {
   score: number;
   bestScore: number;
   bestHoops: number;
+  bestCleanShots: number;
+  bestMultiplier: number;
   multiplier: number;
   cleanStreak: number;
   hoopsCleared: number;

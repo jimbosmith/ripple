@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./styles.css?v=1" />
+  <link rel="stylesheet" href="./styles.css?v=2" />
 </head>
 <body>
   <div class="app-shell">
@@ -25,8 +25,9 @@
         </div>
       </div>
 
+      <!-- Score Display Cluster with Integrated Share Option -->
       <div class="telemetry-strip">
-        <div class="stat-pill">
+        <div class="stat-pill stat-pill-score">
           <span class="stat-label">SCORE</span>
           <span class="stat-value" id="hud-score">0</span>
         </div>
@@ -42,6 +43,16 @@
           <span class="stat-label">BEST</span>
           <span class="stat-value" id="hud-best">0</span>
         </div>
+        <button
+          type="button"
+          class="share-score-pill"
+          id="btn-share-hud"
+          title="Share your score &amp; game link"
+          aria-label="Share Score"
+        >
+          <span class="share-spark">✦</span>
+          <span>Share Score</span>
+        </button>
       </div>
 
       <div class="hud-controls">
@@ -62,7 +73,7 @@
         <div class="ripple-commitment-pill" id="ripple-status-pill">
           <div class="commitment-top">
             <span class="commitment-dot"></span>
-            <span id="ripple-status-text">WATER READY · TAP AROUND PUCK</span>
+            <span id="ripple-status-text">WATER READY · TAP CLOSE FOR HARD PUSH</span>
           </div>
           <div class="commitment-bar-track">
             <div class="commitment-bar-fill" id="ripple-cooldown-fill"></div>
@@ -79,8 +90,8 @@
         </p>
         <div class="rules-grid">
           <div class="rule-item">
-            <strong>One Wave at a Time</strong>
-            <span>Every tap commits you for ~0.5s. Anticipate where the puck will be when your wave arrives.</span>
+            <strong>One Wave at a Time (~0.5s)</strong>
+            <span>Every tap commits you for half a second. Tap close to the puck for a harder push.</span>
           </div>
           <div class="rule-item">
             <strong>Clean Center Shots</strong>
@@ -104,7 +115,7 @@
         </div>
       </section>
 
-      <!-- Instant-Restart Game Over Card -->
+      <!-- Instant-Restart Game Over Card with Share Option -->
       <section class="overlay-card gameover-card" id="modal-gameover" aria-labelledby="gameover-title" hidden>
         <div class="overlay-badge badge-danger">RUN ENDED</div>
         <h2 id="gameover-title">Touched the Pool Edge</h2>
@@ -127,7 +138,47 @@
             <strong class="summary-val" id="final-best">0</strong>
           </div>
         </div>
-        <button type="button" class="primary-btn pulse-retry" id="btn-retry">Tap Anywhere to Retry Immediately</button>
+        <div class="gameover-actions">
+          <button type="button" class="primary-btn pulse-retry" id="btn-retry">Tap Anywhere to Retry</button>
+          <button type="button" class="share-card-btn" id="btn-share-gameover">
+            <span>✦ Share Score</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Luxury Share Score Card Studio Modal -->
+      <section class="overlay-card share-modal-card" id="modal-share" aria-labelledby="share-heading" hidden>
+        <div class="share-modal-header">
+          <div>
+            <span class="overlay-badge">SHARE YOUR RUN</span>
+            <h2 id="share-heading">Ripple Score Card</h2>
+          </div>
+          <button type="button" class="share-close-btn" id="btn-share-close" aria-label="Close Share Modal">✕</button>
+        </div>
+
+        <div class="share-canvas-wrap">
+          <canvas id="share-card-canvas" width="680" height="380" aria-label="Visual score card preview"></canvas>
+        </div>
+
+        <div class="share-message-box">
+          <pre id="share-text-preview" class="share-text-pre"></pre>
+        </div>
+
+        <div class="share-toast" id="share-toast" role="status" aria-live="polite" hidden>
+          Copied score &amp; game link to clipboard! ✨
+        </div>
+
+        <div class="share-actions-row">
+          <button type="button" class="primary-btn" id="btn-share-copy">
+            📋 Copy Score &amp; Link
+          </button>
+          <button type="button" class="share-card-btn" id="btn-share-native">
+            📤 Share Card
+          </button>
+          <button type="button" class="secondary-btn" id="btn-share-download" title="Download PNG Score Card">
+            ⬇ PNG
+          </button>
+        </div>
       </section>
     </main>
 
@@ -135,6 +186,6 @@
     <aside class="dev-panel" id="dev-panel" hidden></aside>
   </div>
 
-  <script type="module" src="./dist/main.js?v=1"></script>
+  <script type="module" src="./dist/main.js?v=2"></script>
 </body>
 </html>

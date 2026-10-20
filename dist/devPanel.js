@@ -1,5 +1,5 @@
                                             
-import { DEFAULT_CONFIG } from './config.js?v=1';
+import { DEFAULT_CONFIG } from './config.js?v=2';
 
 export class DevPanel {
           container             ;
