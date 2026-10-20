@@ -404,6 +404,9 @@ export function initApp(): void {
   window.addEventListener('resize', () => {
     renderer.resize();
   });
+  window.visualViewport?.addEventListener('resize', () => {
+    renderer.resize();
+  });
 
   let lastTime = performance.now();
   function frame(now: number): void {

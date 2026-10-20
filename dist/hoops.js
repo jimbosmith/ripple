@@ -1,5 +1,5 @@
                                                                  
-import { SeededRNG } from './rng.js?v=2';
+import { SeededRNG } from './rng.js?v=3';
 
 /**
  * Computes the outer hoop radius for a given 0-based hoop index.

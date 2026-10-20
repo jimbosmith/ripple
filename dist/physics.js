@@ -9,8 +9,8 @@
        
                
                     
-import { createHoopTarget, pickNextHoopPosition } from './hoops.js?v=2';
-import { SeededRNG } from './rng.js?v=2';
+import { createHoopTarget, pickNextHoopPosition } from './hoops.js?v=3';
+import { SeededRNG } from './rng.js?v=3';
 
                              
                        

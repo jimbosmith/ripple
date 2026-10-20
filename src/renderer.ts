@@ -59,19 +59,24 @@ export class PoolRenderer {
     const rect =
       this.canvas.parentElement?.getBoundingClientRect() || this.canvas.getBoundingClientRect();
     this.dpr = Math.min(window.devicePixelRatio || 1, 2.5);
-    this.width = Math.max(300, Math.floor(rect.width));
-    this.height = Math.max(300, Math.floor(rect.height));
+    this.width = Math.max(280, Math.floor(rect.width));
+    this.height = Math.max(280, Math.floor(rect.height));
 
     this.canvas.width = Math.floor(this.width * this.dpr);
     this.canvas.height = Math.floor(this.height * this.dpr);
     this.canvas.style.width = `${this.width}px`;
     this.canvas.style.height = `${this.height}px`;
 
-    this.centerX = this.width * 0.5;
-    this.centerY = this.height * 0.5;
+    // Reserve space at the bottom so the status pill is never crowded or cut off on mobile
+    const isMobile = this.width < 640 || this.height < 660;
+    const bottomReserve = isMobile ? 54 : 46;
+    const usableHeight = Math.max(220, this.height - bottomReserve);
 
-    const minDim = Math.min(this.width, this.height);
-    this.scale = (minDim * 0.45) / 320;
+    this.centerX = this.width * 0.5;
+    this.centerY = usableHeight * 0.5;
+
+    const minDim = Math.min(this.width, usableHeight);
+    this.scale = (minDim * 0.445) / 320;
   }
 
   public clientToPool(clientX: number, clientY: number): Vec2 {

@@ -1,13 +1,13 @@
-import { RippleGame } from './game.js?v=2';
-import { PoolRenderer } from './renderer.js?v=2';
-import { SoundAndHaptics } from './audio.js?v=2';
-import { DevPanel } from './devPanel.js?v=2';
+import { RippleGame } from './game.js?v=3';
+import { PoolRenderer } from './renderer.js?v=3';
+import { SoundAndHaptics } from './audio.js?v=3';
+import { DevPanel } from './devPanel.js?v=3';
 import {
   buildShareMessage,
   buildShareSnapshot,
   renderShareScoreCard,
   SHARE_GAME_URL
-} from './share.js?v=2';
+} from './share.js?v=3';
                                                
 
 function parseSeedFromUrl()         {
@@ -402,6 +402,9 @@ export function initApp()       {
   });
 
   window.addEventListener('resize', () => {
+    renderer.resize();
+  });
+  window.visualViewport?.addEventListener('resize', () => {
     renderer.resize();
   });
 

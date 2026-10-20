@@ -11,7 +11,7 @@ const distDir = path.join(rootDir, 'dist');
 fs.mkdirSync(distDir, { recursive: true });
 
 const files = fs.readdirSync(srcDir).filter((f) => f.endsWith('.ts'));
-const cacheBust = 'v=2';
+const cacheBust = 'v=3';
 
 for (const file of files) {
   const srcPath = path.join(srcDir, file);

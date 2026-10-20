@@ -1,6 +1,6 @@
                                                                               
-import { cloneConfig, DEFAULT_CONFIG } from './config.js?v=2';
-import { createHoopTarget, pickNextHoopPosition } from './hoops.js?v=2';
+import { cloneConfig, DEFAULT_CONFIG } from './config.js?v=3';
+import { createHoopTarget, pickNextHoopPosition } from './hoops.js?v=3';
 import {
   allocId,
   createEmptyEvents,
@@ -8,8 +8,8 @@ import {
   stepPhysics,
   trySpawnRipple,
                  
-} from './physics.js?v=2';
-import { SeededRNG } from './rng.js?v=2';
+} from './physics.js?v=3';
+import { SeededRNG } from './rng.js?v=3';
 
 const STORAGE_KEY_BEST_SCORE = 'ripple_best_score_v1';
 const STORAGE_KEY_BEST_HOOPS = 'ripple_best_hoops_v1';
